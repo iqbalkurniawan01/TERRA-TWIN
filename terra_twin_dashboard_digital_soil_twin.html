@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TERRA-TWIN — Frugal Digital Soil Twin</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            forest: {
+              900: '#1B4332',
+              800: '#235347',
+              700: '#2D6A4F',
+              100: '#D8F3DC',
+            },
+            earth: {
+              700: '#7F4F24',
+              600: '#936639',
+              100: '#F3EAE0',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* Styling kustom ringan untuk slider & transisi halus */
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 999px;
+      background: #E2E8F0;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #1B4332;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+    }
+
+    .plot-polygon {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .plot-polygon:hover {
+      filter: brightness(1.06);
+      stroke-width: 3;
+    }
+    .plot-selected {
+      stroke: #0F172A !important;
+      stroke-width: 3.5 !important;
+      filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.25));
+    }
+
+    /* Animasi toast */
+    @keyframes slideInUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .toast-animate {
+      animation: slideInUp 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-forest-100 selection:text-forest-900">
+
+  <!-- Mobile Top Header -->
+  <div class="lg:hidden sticky top-0 z-30 flex items-center justify-between bg-forest-900 text-white px-4 py-3 shadow-md">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center">
+        <i data-lucide="layers" class="w-4 h-4 text-emerald-300"></i>
+      </div>
+      <div>
+        <div class="font-display font-extrabold text-sm tracking-wide">TERRA-TWIN</div>
+        <div class="text-[10px] text-emerald-200/80">Frugal Digital Soil Twin</div>
+      </div>
+    </div>
+    <button id="mobileMenuBtn" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition" aria-label="Buka Navigasi">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+    </button>
+  </div>
+
+  <!-- Backdrop Mobile -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden"></div>
+
+  <div class="min-h-screen flex">
+    <!-- FIXED LEFT SIDEBAR -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-forest-900 text-white flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl">
+      <div>
+        <!-- Brand Header -->
+        <div class="px-6 pt-6 pb-5 border-b border-white/10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-950/40">
+              <i data-lucide="sprout" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <h1 class="font-display font-extrabold text-lg tracking-wide leading-tight">TERRA-TWIN</h1>
+              <p class="text-[11px] text-emerald-200/90 font-medium tracking-wide">Frugal Digital Soil Twin</p>
+            </div>
+          </div>
+
+          <!-- Active Location Badge -->
+          <div class="mt-5 p-3 rounded-xl bg-white/10 border border-white/15">
+            <div class="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-emerald-300 font-semibold">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+              <span>Kawasan Aktif</span>
+            </div>
+            <div class="mt-1 text-xs font-semibold text-white leading-snug">
+              BPP Indralaya • Gapoktan Tani Makmur
+            </div>
+            <div class="mt-1 flex items-center justify-between text-[11px] text-emerald-100/80">
+              <span>Luas Hamparan: 12,4 Ha</span>
+              <span class="px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-200 font-medium">6 Blok</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="px-4 py-5 space-y-1.5" aria-label="Menu Utama">
+          <div class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-300/70">
+            Modul Utama
+          </div>
+
+          <button data-tab="tab-overview" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-sm font-semibold transition bg-white text-forest-900 shadow-sm">
+            <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
+            <div class="leading-tight">
+              <div>Peta Risiko & Status</div>
+              <div class="text-[11px] font-normal opacity-75">Overview & Early Warning</div>
+            </div>
+          </button>
+
+          <button data-tab="tab-vess" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-sm font-medium text-emerald-100 hover:bg-white/10 transition">
+            <i data-lucide="scan-search" class="w-4 h-4 shrink-0"></i>
+            <div class="leading-tight">
+              <div>Input & Analisis VESS</div>
+              <div class="text-[11px] font-normal opacity-75">Kalibrasi AI Computer Vision</div>
+            </div>
+          </button>
+
+          <button data-tab="tab-simulator" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-sm font-medium text-emerald-100 hover:bg-white/10 transition">
+            <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i>
+            <div class="leading-tight">
+              <div>Simulator Digital Twin</div>
+              <div class="text-[11px] font-normal opacity-75">What-If & Remediasi Ekologis</div>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom Telemetry Sync Status -->
+      <div class="p-4 border-t border-white/10">
+        <div class="p-3.5 rounded-xl bg-black/20 border border-white/10 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs font-semibold text-emerald-200">
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              </span>
+              <span>Fusi Data Satelit Aktif</span>
+            </div>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">LIVE</span>
+          </div>
+          <div class="text-[11px] text-emerald-100/75 space-y-1">
+            <div class="flex justify-between">
+              <span>Sentinel-1 SAR (Air):</span>
+              <span class="font-medium text-white">06:15 WIB</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Sentinel-2 (NDVI):</span>
+              <span class="font-medium text-white">18 Nov 2026</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Kalibrasi VESS AI:</span>
+              <span class="font-medium text-white">6/6 Blok</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-center text-[10px] text-emerald-200/60">
+          World Soil Day 2026 • BRIN × HITI Prototype
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 lg:ml-72 min-w-0">
+      <!-- Top Context Header Bar -->
+      <header class="bg-white border-b border-slate-200 px-5 sm:px-8 py-4 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+              <span>Dashboard Pengelolaan Tanah Presisi</span>
+              <span>•</span>
+              <span class="text-earth-700 font-semibold">Musim Tanam I (2026/2027)</span>
+            </div>
+            <h2 id="pageTitle" class="font-display font-bold text-xl text-slate-900 mt-0.5">
+              Peta Risiko Pemadatan & Status Lahan
+            </h2>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs text-slate-600">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-forest-700"></i>
+              <span>Jumat, 20 November 2026</span>
+            </div>
+            <button id="btnSyncGlobal" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-forest-900 hover:bg-forest-800 text-white text-xs font-semibold shadow-sm transition">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Perbarui Data Sentinel</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT CONTAINER -->
+      <div class="max-w-7xl mx-auto p-5 sm:p-8 space-y-6">
+
+        <!-- ========================================================= -->
+        <!-- TAB 1: PETA RISIKO & STATUS LAHAN (OVERVIEW)              -->
+        <!-- ========================================================= -->
+        <section id="tab-overview" class="tab-panel space-y-6">
+
+          <!-- Early Warning Traffic-Light Banner -->
+          <div class="rounded-2xl bg-gradient-to-r from-red-50 via-rose-50 to-amber-50 border border-red-200 p-4 sm:p-5 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-red-600/25">
+                  <i data-lucide="octagon-alert" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[11px] font-bold uppercase tracking-wider">
+                      Status: NO-GO
+                    </span>
+                    <h3 class="font-display font-extrabold text-base sm:text-lg text-red-900">
+                      TUNDA MASUK TRAKTOR — Risiko Pemadatan Tinggi
+                    </h3>
+                  </div>
+                  <p class="mt-1 text-sm text-red-800/90 leading-relaxed">
+                    Kadar air tanah aktual (<strong>34%</strong>) melampaui ambang <em>Plastic Limit</em> (<strong>32%</strong>) berdasarkan fusi <strong>Sentinel-1 SAR</strong> &amp; curah hujan lokal. Lintasan traktor berisiko merusak makropori dan mempertebal lapisan <em>hardpan</em> secara permanen.
+                  </p>
+                </div>
+              </div>
+              <button onclick="switchTab('tab-simulator')" class="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-semibold shadow-sm transition">
+                <span>Simulasikan Dampak</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 KPI Summary Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <!-- KPI 1 -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Rata-rata Skor VESS</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">Kritis</span>
+              </div>
+              <div class="mt-3 flex items-baseline gap-2">
+                <span class="font-display font-extrabold text-2xl text-slate-900">Sq4</span>
+                <span class="text-sm font-semibold text-red-600">(Padat)</span>
+              </div>
+              <div class="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span>Skala visual FAO (Sq1 Gembur – Sq5)</span>
+              </div>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Estimasi Bulk Density</span>
+                <div class="w-8 h-8 rounded-lg bg-earth-100 text-earth-700 flex items-center justify-center">
+                  <i data-lucide="weight" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-2 font-display font-extrabold text-2xl text-slate-900">
+                1,64 <span class="text-sm font-semibold text-slate-500">g/cm³</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-red-600">
+                Ambang kritis akar &gt; 1,60 g/cm³
+              </div>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Kadar Air vs Plastic Limit</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <i data-lucide="droplets" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-2 font-display font-extrabold text-2xl text-slate-900">
+                34% <span class="text-base font-semibold text-slate-400">/ 32%</span>
+              </div>
+              <div class="mt-2 text-xs font-medium text-amber-700">
+                Zona Rawan Memadat (+2% di atas batas)
+              </div>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Kedalaman Hardpan</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <i data-lucide="arrow-down-to-line" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-2 font-display font-extrabold text-2xl text-slate-900">
+                18–26 <span class="text-sm font-semibold text-slate-500">cm</span>
+              </div>
+              <div class="mt-2 text-xs text-slate-500">
+                Lapisan Tapak Bajak (<em>Plow Pan</em>)
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Content Grid: Map (Left) + Forecast & Telemetry (Right) -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- Left Column (7 cols): Interactive Spatial Risk Map + Plot Inspector -->
+            <div class="xl:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="font-display font-bold text-base text-slate-900">
+                    Peta Zonasi Risiko Pemadatan Spasial (12,4 Ha)
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Klik salah satu petak sawah untuk melihat inspeksi detail profil tanah &amp; riwayat alsintan.
+                  </p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-700">
+                  <i data-lucide="satellite" class="w-3.5 h-3.5 text-forest-700"></i>
+                  Fusi Sentinel-1 + VESS
+                </span>
+              </div>
+
+              <!-- Stylized Satellite Map SVG -->
+              <div class="p-5 bg-slate-50/70">
+                <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-[#DCE8DC]">
+                  <svg id="paddyMap" viewBox="0 0 680 340" class="w-full h-auto block select-none" role="img" aria-label="Peta Spasial 6 Blok Sawah">
+                    <defs>
+                      <!-- Grid satelit halus -->
+                      <pattern id="satGrid" width="34" height="34" patternUnits="userSpaceOnUse">
+                        <path d="M 34 0 L 0 0 0 34" fill="none" stroke="rgba(27,67,50,0.08)" stroke-width="1"/>
+                      </pattern>
+                      <!-- Pola saluran irigasi -->
+                      <linearGradient id="canalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="100%" stop-color="#0284C7" />
+                      </linearGradient>
+                    </defs>
+
+                    <!-- Latar tekstur lahan -->
+                    <rect width="680" height="340" fill="#CFE0CE" />
+                    <rect width="680" height="340" fill="url(#satGrid)" />
+
+                    <!-- Jalan Usaha Tani (JUT) di tengah horizontal -->
+                    <path d="M 0 172 L 680 165" stroke="#94A3B8" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 0 172 L 680 165" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="10 8" />
+                    <text x="530" y="170" font-size="9" font-weight="700" fill="#334155" letter-spacing="0.5">JALAN USAHA TANI (AKSES TRAKTOR)</text>
+
+                    <!-- Saluran Irigasi Sekunder di kiri -->
+                    <path d="M 28 0 Q 42 170 22 340" fill="none" stroke="url(#canalGrad)" stroke-width="10" opacity="0.85" />
+                    <text x="12" y="120" font-size="9" font-weight="700" fill="#0369A1" transform="rotate(-90 12 120)">IRIGASI PRIMER</text>
+
+                    <!-- BLOK A1 (Gembur - Emerald) -->
+                    <g class="plot-group" data-plot="A1">
+                      <polygon id="poly-A1" class="plot-polygon" points="58,28 242,24 236,152 52,158" fill="#10B981" fill-opacity="0.78" stroke="#047857" stroke-width="2" />
+                      <text x="145" y="84" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK A1</text>
+                      <text x="145" y="102" text-anchor="middle" font-size="11" font-weight="600" fill="#ECFDF5">Sq2 • Gembur (2,1 Ha)</text>
+                    </g>
+
+                    <!-- BLOK A2 (Sangat Padat - Red, default selected) -->
+                    <g class="plot-group" data-plot="A2">
+                      <polygon id="poly-A2" class="plot-polygon plot-selected" points="252,24 446,20 442,150 246,152" fill="#EF4444" fill-opacity="0.82" stroke="#991B1B" stroke-width="2" />
+                      <text x="346" y="82" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK A2</text>
+                      <text x="346" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#FEF2F2">Sq4 • Padat (2,4 Ha)</text>
+                      <circle cx="424" cy="40" r="8" fill="#FFFFFF" />
+                      <text x="424" y="44" text-anchor="middle" font-size="11" font-weight="800" fill="#DC2626">!</text>
+                    </g>
+
+                    <!-- BLOK A3 (Sedang - Amber) -->
+                    <g class="plot-group" data-plot="A3">
+                      <polygon id="poly-A3" class="plot-polygon" points="456,20 648,28 642,148 452,150" fill="#F59E0B" fill-opacity="0.82" stroke="#B45309" stroke-width="2" />
+                      <text x="550" y="84" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK A3</text>
+                      <text x="550" y="102" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFBEB">Sq3 • Sedang (1,9 Ha)</text>
+                    </g>
+
+                    <!-- BLOK B1 (Sedang - Amber) -->
+                    <g class="plot-group" data-plot="B1">
+                      <polygon id="poly-B1" class="plot-polygon" points="50,188 238,184 244,312 44,316" fill="#F59E0B" fill-opacity="0.82" stroke="#B45309" stroke-width="2" />
+                      <text x="144" y="246" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK B1</text>
+                      <text x="144" y="264" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFBEB">Sq3 • Sedang (2,0 Ha)</text>
+                    </g>
+
+                    <!-- BLOK B2 (Sangat Padat - Red) -->
+                    <g class="plot-group" data-plot="B2">
+                      <polygon id="poly-B2" class="plot-polygon" points="248,184 444,182 450,310 254,312" fill="#DC2626" fill-opacity="0.85" stroke="#7F1D1D" stroke-width="2" />
+                      <text x="348" y="244" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK B2</text>
+                      <text x="348" y="262" text-anchor="middle" font-size="11" font-weight="600" fill="#FEF2F2">Sq5 • Sangat Padat (2,2 Ha)</text>
+                    </g>
+
+                    <!-- BLOK B3 (Gembur - Emerald) -->
+                    <g class="plot-group" data-plot="B3">
+                      <polygon id="poly-B3" class="plot-polygon" points="454,182 642,180 648,308 460,310" fill="#10B981" fill-opacity="0.78" stroke="#047857" stroke-width="2" />
+                      <text x="550" y="244" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">BLOK B3</text>
+                      <text x="550" y="262" text-anchor="middle" font-size="11" font-weight="600" fill="#ECFDF5">Sq1 • Sangat Gembur (1,8 Ha)</text>
+                    </g>
+
+                    <!-- Kompas Utara -->
+                    <g transform="translate(636, 36)">
+                      <circle cx="0" cy="0" r="14" fill="rgba(15,23,42,0.65)" />
+                      <text x="0" y="4" text-anchor="middle" font-size="10" font-weight="800" fill="#FFFFFF">U</text>
+                    </g>
+                  </svg>
+
+                  <!-- Legend Bar -->
+                  <div class="px-4 py-2.5 bg-white/95 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <span class="font-semibold text-slate-600">Legenda Skor VESS:</span>
+                    <div class="flex flex-wrap items-center gap-3">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-emerald-500"></span> Sq1–Sq2 (Gembur / Aman)</span>
+                      <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-500"></span> Sq3 (Padat Sedang)</span>
+                      <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-500"></span> Sq4–Sq5 (Padat Kritis)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Dynamic Plot Inspector Card -->
+                <div id="plotInspector" class="mt-4 rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                      <span id="inspBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700">Sq4 • Padat</span>
+                      <div>
+                        <h4 id="inspTitle" class="font-display font-bold text-sm text-slate-900">Inspeksi Detail: Blok A2 (2,4 Ha)</h4>
+                        <p id="inspNote" class="text-xs text-slate-500">Terdeteksi lapisan tapak bajak (hardpan) pada kedalaman 18–26 cm.</p>
+                      </div>
+                    </div>
+                    <button onclick="switchTab('tab-vess')" class="text-xs font-semibold text-forest-700 hover:text-forest-900 inline-flex items-center gap-1">
+                      <span>Lihat Sampel VESS</span>
+                      <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+
+                  <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <div class="text-[11px] text-slate-500">Bulk Density</div>
+                      <div id="inspBD" class="font-display font-bold text-sm text-slate-900 mt-0.5">1,66 g/cm³</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <div class="text-[11px] text-slate-500">Kadar Air Tanah</div>
+                      <div id="inspMoisture" class="font-display font-bold text-sm text-red-600 mt-0.5">35% (Basah)</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <div class="text-[11px] text-slate-500">Lintasan Terakhir</div>
+                      <div id="inspTractor" class="font-display font-bold text-sm text-slate-900 mt-0.5">Traktor R4 (4x)</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <div class="text-[11px] text-slate-500">Rekomendasi</div>
+                      <div id="inspAction" class="font-display font-bold text-sm text-earth-700 mt-0.5">Bio-Tillage</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column (5 cols): 5-Day Compaction Forecast + Sentinel Telemetry -->
+            <div class="xl:col-span-5 space-y-6">
+              <!-- 5-Day Forecast Card -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-display font-bold text-base text-slate-900">
+                      Ringkasan Status Harian &amp; Cuaca Tanah
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                      Prakiraan kelayakan masuk alsintan 5 hari ke depan (vs. <em>Plastic Limit</em> 32%)
+                    </p>
+                  </div>
+                  <i data-lucide="cloud-rain" class="w-5 h-5 text-sky-600"></i>
+                </div>
+
+                <div class="mt-4 space-y-2.5">
+                  <!-- Day 1 -->
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-red-50/70 border border-red-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 text-center">
+                        <div class="text-xs font-bold text-slate-900">Jum</div>
+                        <div class="text-[10px] text-slate-500">20 Nov</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-slate-800">Hujan Sedang (18 mm)</div>
+                        <div class="text-[11px] text-slate-500">Kadar Air: <strong class="text-red-700">34%</strong></div>
+                      </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-600 text-white">NO-GO</span>
+                  </div>
+
+                  <!-- Day 2 -->
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-red-50/50 border border-red-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 text-center">
+                        <div class="text-xs font-bold text-slate-900">Sab</div>
+                        <div class="text-[10px] text-slate-500">21 Nov</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-slate-800">Hujan Ringan (8 mm)</div>
+                        <div class="text-[11px] text-slate-500">Kadar Air: <strong class="text-red-600">33%</strong></div>
+                      </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-600 text-white">NO-GO</span>
+                  </div>
+
+                  <!-- Day 3 -->
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 text-center">
+                        <div class="text-xs font-bold text-slate-900">Min</div>
+                        <div class="text-[10px] text-slate-500">22 Nov</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-slate-800">Berawan (0 mm)</div>
+                        <div class="text-[11px] text-slate-500">Kadar Air: <strong class="text-amber-700">31%</strong></div>
+                      </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-white">CAUTION</span>
+                  </div>
+
+                  <!-- Day 4 -->
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 text-center">
+                        <div class="text-xs font-bold text-slate-900">Sen</div>
+                        <div class="text-[10px] text-slate-500">23 Nov</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-slate-800">Cerah Berawan</div>
+                        <div class="text-[11px] text-slate-500">Kadar Air: <strong class="text-emerald-700">27%</strong></div>
+                      </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white">GO • AMAN</span>
+                  </div>
+
+                  <!-- Day 5 -->
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 text-center">
+                        <div class="text-xs font-bold text-slate-900">Sel</div>
+                        <div class="text-[10px] text-slate-500">24 Nov</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-slate-800">Cerah Optimal</div>
+                        <div class="text-[11px] text-slate-500">Kadar Air: <strong class="text-emerald-700">25%</strong></div>
+                      </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white">GO • AMAN</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sentinel Telemetry Card -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-display font-bold text-sm text-slate-900">Telemetri Fusi Satelit (Rp 0 Akuisisi)</h3>
+                  <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Terverifikasi</span>
+                </div>
+                <div class="space-y-3 text-xs">
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">Backscatter Sentinel-1 SAR (VV/VH)</span>
+                    <span class="font-semibold text-slate-900">-9,4 dB (Lembap)</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">Indeks Vegetasi Sentinel-2 (NDVI)</span>
+                    <span class="font-semibold text-slate-900">0,42 (Stres Akar)</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2">
+                    <span class="text-slate-600">Tekstur Tanah Dasar (Peta BBSDLP)</span>
+                    <span class="font-semibold text-earth-700">Lempung Berliat (Clay Loam)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: INPUT & ANALISIS SAMPEL VESS (AI CALIBRATION)      -->
+        <!-- ========================================================= -->
+        <section id="tab-vess" class="tab-panel hidden space-y-6">
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+            <!-- Left Column (7 cols): Upload & Visual Soil Block AI Scanner -->
+            <div class="xl:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="font-display font-bold text-base text-slate-900">
+                    Unggah &amp; Pindai Sampel Blok Tanah (Metode VESS)
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Pilih sampel preset lapangan atau unggah foto blok galian tanah (kedalaman 0–25 cm).
+                  </p>
+                </div>
+                <!-- Toggle Overlay AI -->
+                <label class="inline-flex items-center gap-2.5 cursor-pointer select-none bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                  <input id="toggleAiOverlay" type="checkbox" checked class="sr-only peer" />
+                  <div class="w-9 h-5 bg-slate-300 peer-checked:bg-forest-700 rounded-full relative transition">
+                    <div class="w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform peer-checked:translate-x-4"></div>
+                  </div>
+                  <span class="text-xs font-semibold text-slate-700">Overlay Deteksi AI</span>
+                </label>
+              </div>
+
+              <!-- 3 Preset Sample Buttons -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <button data-preset="padat" class="preset-btn px-3 py-2.5 rounded-xl border-2 border-red-500 bg-red-50 text-left transition">
+                  <div class="text-xs font-bold text-red-800">Sampel Blok A2 — Padat</div>
+                  <div class="text-[11px] text-red-600 mt-0.5">Skor Sq4 • J-Rooting</div>
+                </button>
+                <button data-preset="sedang" class="preset-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition">
+                  <div class="text-xs font-bold text-slate-800">Sampel Blok B1 — Sedang</div>
+                  <div class="text-[11px] text-amber-600 mt-0.5">Skor Sq3 • Semi-Padat</div>
+                </button>
+                <button data-preset="gembur" class="preset-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition">
+                  <div class="text-xs font-bold text-slate-800">Sampel Blok A1 — Gembur</div>
+                  <div class="text-[11px] text-emerald-600 mt-0.5">Skor Sq2 • Makropori Baik</div>
+                </button>
+              </div>
+
+              <!-- Visual Soil Block Illustration + Computer Vision Bounding Boxes -->
+              <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900">
+                <!-- Uploaded custom photo preview (hidden unless user uploads) -->
+                <img id="customPhotoPreview" class="hidden w-full h-80 object-cover opacity-90" alt="Pratinjau Sampel Tanah" />
+
+                <!-- Detailed SVG Soil Block Illustration -->
+                <svg id="vessSoilSvg" viewBox="0 0 640 340" class="w-full h-auto block">
+                  <defs>
+                    <linearGradient id="bgField" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#1E293B" />
+                      <stop offset="100%" stop-color="#0F172A" />
+                    </linearGradient>
+                    <linearGradient id="soilBaseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#7F4F24" />
+                      <stop offset="55%" stop-color="#582F0E" />
+                      <stop offset="100%" stop-color="#3D220B" />
+                    </linearGradient>
+                  </defs>
+
+                  <!-- Latar gelap kamera lab/lapangan -->
+                  <rect width="640" height="340" fill="url(#bgField)" />
+
+                  <!-- Penggaris Kalibrasi di sisi kiri (0-25 cm) -->
+                  <g transform="translate(30, 35)">
+                    <rect x="0" y="0" width="26" height="270" rx="4" fill="#F8FAFC" opacity="0.92" />
+                    <text x="13" y="16" text-anchor="middle" font-size="9" font-weight="800" fill="#0F172A">cm</text>
+                    <line x1="16" y1="30" x2="26" y2="30" stroke="#0F172A" stroke-width="1.5" />
+                    <text x="8" y="33" font-size="8" font-weight="700" fill="#334155">0</text>
+                    <line x1="16" y1="84" x2="26" y2="84" stroke="#0F172A" stroke-width="1.5" />
+                    <text x="8" y="87" font-size="8" font-weight="700" fill="#334155">5</text>
+                    <line x1="16" y1="138" x2="26" y2="138" stroke="#0F172A" stroke-width="1.5" />
+                    <text x="6" y="141" font-size="8" font-weight="700" fill="#334155">10</text>
+                    <line x1="16" y1="192" x2="26" y2="192" stroke="#0F172A" stroke-width="1.5" />
+                    <text x="6" y="195" font-size="8" font-weight="700" fill="#334155">15</text>
+                    <line x1="16" y1="246" x2="26" y2="246" stroke="#0F172A" stroke-width="1.5" />
+                    <text x="6" y="249" font-size="8" font-weight="700" fill="#334155">20</text>
+                  </g>
+
+                  <!-- Alas kain kalibrasi / sekop VESS -->
+                  <rect x="95" y="45" width="450" height="255" rx="16" fill="#27272A" stroke="#3F3F46" stroke-width="2" />
+
+                  <!-- Blok Galian Tanah Utama -->
+                  <g id="soilBlockVisual">
+                    <!-- Bentuk bongkahan tanah dinamis dirender oleh JS -->
+                  </g>
+
+                  <!-- Overlay Computer Vision Bounding Boxes (toggled by checkbox) -->
+                  <g id="aiOverlayGroup">
+                    <!-- Dirender dinamis sesuai preset -->
+                  </g>
+
+                  <!-- Watermark Kamera AI -->
+                  <g transform="translate(465, 16)">
+                    <rect x="0" y="0" width="155" height="22" rx="6" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1" />
+                    <text x="77" y="14" text-anchor="middle" font-size="10" font-weight="700" fill="#6EE7B7">YOLOv11-VESS Seg • LIVE</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- File Upload Dropzone -->
+              <label for="soilFileInput" class="flex items-center justify-between gap-4 p-3.5 rounded-xl border-2 border-dashed border-slate-300 hover:border-forest-700 bg-slate-50 hover:bg-emerald-50/40 cursor-pointer transition">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-forest-700">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-800">Unggah Foto Sampel Lapangan Baru (.JPG / .PNG)</div>
+                    <div id="uploadFileName" class="text-[11px] text-slate-500">Atau klik untuk mengganti pratinjau dengan foto kamera HP penyuluh</div>
+                  </div>
+                </div>
+                <span class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700">Pilih File</span>
+                <input id="soilFileInput" type="file" accept="image/*" class="hidden" />
+              </label>
+            </div>
+
+            <!-- Right Column (5 cols): AI Calibration Result + Tractor History Form -->
+            <div class="xl:col-span-5 space-y-5">
+              <!-- AI Result Card -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 class="font-display font-bold text-base text-slate-900">Hasil Kalibrasi AI Computer Vision</h3>
+                    <p id="vessBlockSubtitle" class="text-xs text-slate-500 mt-0.5">Sampel Blok A2 • Titik GPS -3.2241, 104.6512</p>
+                  </div>
+                  <span id="vessConfBadge" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
+                    Conf. 94,2%
+                  </span>
+                </div>
+
+                <!-- Highlight Score -->
+                <div id="vessScoreBanner" class="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] font-semibold uppercase tracking-wider text-red-700">Skor Struktur Tanah (VESS)</div>
+                    <div id="vessScoreText" class="font-display font-extrabold text-2xl text-red-900 mt-0.5">Sq4 — Padat</div>
+                  </div>
+                  <div id="vessScoreIcon" class="w-11 h-11 rounded-xl bg-red-600 text-white flex items-center justify-center font-display font-extrabold text-lg">
+                    4
+                  </div>
+                </div>
+
+                <!-- Quantitative Estimations -->
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-[11px] text-slate-500">Estimasi Bulk Density</div>
+                    <div id="vessBD" class="font-display font-bold text-base text-slate-900 mt-0.5">1,66 g/cm³</div>
+                  </div>
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-[11px] text-slate-500">Penetration Resistance</div>
+                    <div id="vessPR" class="font-display font-bold text-base text-slate-900 mt-0.5">2.480 kPa</div>
+                  </div>
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-[11px] text-slate-500">Deteksi Lapisan Hardpan</div>
+                    <div id="vessHardpan" class="font-display font-bold text-base text-red-600 mt-0.5">18–26 cm</div>
+                  </div>
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-[11px] text-slate-500">Estimasi Makropori</div>
+                    <div id="vessPore" class="font-display font-bold text-base text-slate-900 mt-0.5">7,4% (Minim)</div>
+                  </div>
+                </div>
+
+                <div class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 leading-relaxed">
+                  <strong class="text-slate-800">Temuan Morfologi AI:</strong>
+                  <span id="vessFinding">Dominasi gumpalan agregat sub-angular keras bertepi tajam (&gt;10 cm), akar padi membelok horizontal (<em>J-rooting</em>) pada kedalaman 18 cm.</span>
+                </div>
+              </div>
+
+              <!-- Riwayat Lalu Lintas Alsintan Form -->
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <h4 class="font-display font-bold text-sm text-slate-900 mb-3 flex items-center gap-2">
+                  <i data-lucide="tractor" class="w-4 h-4 text-earth-700"></i>
+                  <span>Riwayat Lalu Lintas Alsintan (Kalibrasi Model)</span>
+                </h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Mesin Pengolah Terakhir</label>
+                    <select id="inputMachineType" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-700">
+                      <option value="traktor4" selected>Traktor Roda 4 (Bobot ~2,2 Ton)</option>
+                      <option value="traktor2">Traktor Roda 2 / Hand Tractor (~0,3 Ton)</option>
+                      <option value="combine">Combine Harvester Berat (~3,8 Ton)</option>
+                      <option value="manual">Pengolahan Manual / Tanpa Mesin</option>
+                    </select>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Frekuensi Lintasan / Musim</label>
+                      <input id="inputPassCount" type="number" min="0" max="15" value="4" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-700" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Penetrometer BPP (Opsional)</label>
+                      <input id="inputPenetrometer" type="text" placeholder="2450 kPa" value="2450 kPa" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-700" />
+                    </div>
+                  </div>
+                  <button id="btnSyncTwin" class="w-full mt-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-forest-900 hover:bg-forest-800 text-white text-xs font-bold shadow-sm transition">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                    <span>Sinkronkan ke Digital Soil Twin</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 3: SIMULATOR DIGITAL TWIN & REMEDIASI (WHAT-IF)       -->
+        <!-- ========================================================= -->
+        <section id="tab-simulator" class="tab-panel hidden space-y-6">
+
+          <!-- Top Controls + Center 2D Soil Profile -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+            <!-- Left Controls Panel (4 cols) -->
+            <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
+              <div>
+                <span class="px-2.5 py-0.5 rounded-full bg-forest-100 text-forest-900 text-[11px] font-bold uppercase tracking-wide">
+                  What-If Engine
+                </span>
+                <h3 class="font-display font-bold text-base text-slate-900 mt-2">
+                  Parameter Simulasi Kembaran Digital
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Geser parameter di bawah untuk memprediksi perubahan profil tanah &amp; pertumbuhan akar secara <em>real-time</em>.
+                </p>
+              </div>
+
+              <!-- Control 1: Beban Alsintan -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="simMachine" class="font-bold text-slate-700">1. Beban Alsintan yang Masuk</label>
+                  <span id="simMachineLabel" class="font-bold text-earth-700">Traktor Roda 4</span>
+                </div>
+                <input id="simMachine" type="range" min="0" max="3" step="1" value="2" class="w-full" />
+                <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <span>Tanpa Mesin</span>
+                  <span>Roda 2</span>
+                  <span>Roda 4</span>
+                  <span>Harvester</span>
+                </div>
+              </div>
+
+              <!-- Control 2: Kadar Air Tanah -->
+              <div class="space-y-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="simMoisture" class="font-bold text-slate-700">2. Kadar Air Saat Olah Lahan</label>
+                  <span id="simMoistureLabel" class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">34% (Di atas PL)</span>
+                </div>
+                <input id="simMoisture" type="range" min="15" max="45" step="1" value="34" class="w-full" />
+                <div class="flex justify-between text-[10px] text-slate-500">
+                  <span>15% (Kering)</span>
+                  <span class="font-bold text-amber-700">▲ Plastic Limit (32%)</span>
+                  <span>45% (Jenuh)</span>
+                </div>
+              </div>
+
+              <!-- Control 3: Skenario Remediasi Ekologis -->
+              <div class="space-y-2 pt-2 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-700">3. Skenario Remediasi Ekologis</label>
+                <div class="space-y-2">
+                  <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-forest-700 has-[:checked]:bg-emerald-50/50">
+                    <input type="radio" name="remediation" value="none" checked class="mt-0.5 accent-forest-900" />
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">Tanpa Remediasi (Konvensional)</div>
+                      <div class="text-[11px] text-slate-500">Olah tanah berulang tanpa pemulihan biologi</div>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-forest-700 has-[:checked]:bg-emerald-50/50">
+                    <input type="radio" name="remediation" value="biotillage" class="mt-0.5 accent-forest-900" />
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">Bio-Tillage 3 Bulan</div>
+                      <div class="text-[11px] text-slate-500">Tanaman berakar tunggang pemecah <em>hardpan</em></div>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-forest-700 has-[:checked]:bg-emerald-50/50">
+                    <input type="radio" name="remediation" value="full" class="mt-0.5 accent-forest-900" />
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">Bio-Tillage + Biochar/Kompos (6 Bln)</div>
+                      <div class="text-[11px] text-slate-500">Pemulihan struktur makropori &amp; karbon organik</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Center Visualization: Interactive 2D Soil Profile Cross-Section (8 cols) -->
+            <div class="xl:col-span-8 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="font-display font-bold text-base text-slate-900">
+                    Penampang Digital Soil Twin (Kedalaman 0–40 cm)
+                  </h3>
+                  <p class="text-xs text-slate-500">
+                    Visualisasi dinamis ketebalan <em>plow pan</em> dan respons penetrasi akar tanaman pangan.
+                  </p>
+                </div>
+                <span id="simStatusPill" class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                  Risiko J-Rooting Tinggi
+                </span>
+              </div>
+
+              <!-- 2D Soil Cross-Section SVG -->
+              <div class="rounded-2xl overflow-hidden border border-slate-200 bg-sky-50">
+                <svg id="soilProfileSvg" viewBox="0 0 700 320" class="w-full h-auto block">
+                  <!-- Langit & Permukaan -->
+                  <rect x="0" y="0" width="700" height="72" fill="#E0F2FE" />
+                  <!-- Daun / Tanaman Padi di atas permukaan -->
+                  <g transform="translate(355, 72)">
+                    <path d="M0,0 Q-14,-35 -34,-50 Q-10,-32 -4,0 Z" fill="#15803D" />
+                    <path d="M0,0 Q-5,-42 -8,-58 Q4,-38 3,0 Z" fill="#16A34A" />
+                    <path d="M0,0 Q12,-40 32,-52 Q12,-30 4,0 Z" fill="#22C55E" />
+                    <path d="M0,0 Q20,-26 42,-32 Q18,-18 5,0 Z" fill="#15803D" />
+                  </g>
+
+                  <!-- Layer 1: Topsoil (0 - 15 cm -> y: 72 to 158) -->
+                  <rect id="layerTopsoil" x="72" y="72" width="628" height="86" fill="#9A6B44" />
+
+                  <!-- Layer 2: Plow Pan / Hardpan (15 - 30 cm -> y: 158 to 244) -->
+                  <rect id="layerHardpan" x="72" y="158" width="628" height="86" fill="#4A2511" />
+                  <!-- Garis pola pemadatan (diatur opasitasnya oleh JS) -->
+                  <g id="hardpanPattern" opacity="0.65">
+                    <line x1="85" y1="178" x2="680" y2="178" stroke="#1E0E06" stroke-width="2" stroke-dasharray="14 8" />
+                    <line x1="95" y1="200" x2="675" y2="200" stroke="#1E0E06" stroke-width="2.5" stroke-dasharray="18 6" />
+                    <line x1="85" y1="222" x2="680" y2="222" stroke="#1E0E06" stroke-width="2" stroke-dasharray="12 10" />
+                  </g>
+
+                  <!-- Layer 3: Subsoil (30 - 40 cm -> y: 244 to 320) -->
+                  <rect id="layerSubsoil" x="72" y="244" width="628" height="76" fill="#7C5230" />
+
+                  <!-- Pori-pori udara/makropori (dirender dinamis) -->
+                  <g id="soilPoresGroup"></g>
+
+                  <!-- Akar Tanaman (dirender dinamis: J-rooting vs Tembus Dalam) -->
+                  <g id="plantRootsGroup"></g>
+
+                  <!-- Label Lapisan di Kanan -->
+                  <g font-size="11" font-weight="700">
+                    <rect x="520" y="84" width="165" height="24" rx="6" fill="rgba(15,23,42,0.55)" />
+                    <text x="602" y="100" text-anchor="middle" fill="#FFFFFF">Topsoil (0–15 cm)</text>
+
+                    <rect x="500" y="188" width="185" height="26" rx="6" fill="rgba(153,27,27,0.85)" id="hardpanTagBg" />
+                    <text x="592" y="205" text-anchor="middle" fill="#FFFFFF" id="hardpanTagText">Hardpan / Plow Pan (Padat)</text>
+
+                    <rect x="520" y="268" width="165" height="24" rx="6" fill="rgba(15,23,42,0.55)" />
+                    <text x="602" y="284" text-anchor="middle" fill="#FFFFFF">Subsoil (30–40 cm)</text>
+                  </g>
+
+                  <!-- Depth Ruler di Kiri (0 - 40 cm) -->
+                  <rect x="0" y="72" width="72" height="248" fill="#0F172A" />
+                  <g fill="#E2E8F0" font-size="11" font-weight="700">
+                    <line x1="56" y1="74" x2="72" y2="74" stroke="#94A3B8" stroke-width="2" />
+                    <text x="48" y="80" text-anchor="end">0 cm</text>
+
+                    <line x1="56" y1="158" x2="72" y2="158" stroke="#94A3B8" stroke-width="2" />
+                    <text x="48" y="162" text-anchor="end">15 cm</text>
+
+                    <line x1="56" y1="244" x2="72" y2="244" stroke="#94A3B8" stroke-width="2" />
+                    <text x="48" y="248" text-anchor="end">30 cm</text>
+
+                    <line x1="56" y1="312" x2="72" y2="312" stroke="#94A3B8" stroke-width="2" />
+                    <text x="48" y="314" text-anchor="end">40 cm</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Live Calculated Metrics -->
+              <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[11px] font-semibold text-slate-500">Proyeksi Bulk Density</div>
+                  <div id="metricBD" class="font-display font-extrabold text-xl text-red-600 mt-0.5">1,68 g/cm³</div>
+                  <div id="metricBDSub" class="text-[11px] text-slate-500 mt-0.5">Melebihi ambang kritis</div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[11px] font-semibold text-slate-500">Daya Tembus Akar</div>
+                  <div id="metricRoot" class="font-display font-extrabold text-xl text-red-600 mt-0.5">38%</div>
+                  <div id="metricRootSub" class="text-[11px] text-slate-500 mt-0.5">Akar terhambat (J-Rooting)</div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[11px] font-semibold text-slate-500">Estimasi Dampak Hasil Panen</div>
+                  <div id="metricYield" class="font-display font-extrabold text-xl text-red-600 mt-0.5">-18,5%</div>
+                  <div id="metricYieldSub" class="text-[11px] text-slate-500 mt-0.5">Dibanding potensi optimal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Grid: Chart.js Projection (Left) + Resep Remediasi Ekologis (Right) -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- Chart.js Line Chart (7 cols) -->
+            <div class="xl:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="font-display font-bold text-base text-slate-900">
+                    Proyeksi Pemulihan Kepadatan Tanah &amp; Potensi Panen (Bulan 0–6)
+                  </h3>
+                  <p class="text-xs text-slate-500">
+                    Perbandingan <em>Penetration Resistance</em> (kPa) terhadap indeks potensi hasil panen (%).
+                  </p>
+                </div>
+              </div>
+              <div class="relative h-64 w-full">
+                <canvas id="recoveryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Resep Remediasi Ekologis Card (5 cols) -->
+            <div class="xl:col-span-5 bg-gradient-to-br from-forest-900 to-forest-800 text-white rounded-2xl p-5 shadow-md flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg bg-emerald-400/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider">
+                    Resep Spesifik Lokasi
+                  </span>
+                  <i data-lucide="leaf" class="w-5 h-5 text-emerald-300"></i>
+                </div>
+                <h3 class="font-display font-bold text-lg mt-3">
+                  Rekomendasi Remediasi Ekologis
+                </h3>
+                <p id="recipeIntro" class="text-xs text-emerald-100/80 mt-1">
+                  Disusun otomatis dari skenario simulasi aktif untuk memulihkan makropori secara berkelanjutan.
+                </p>
+
+                <div class="mt-4 space-y-3">
+                  <div class="p-3 rounded-xl bg-white/10 border border-white/10">
+                    <div class="text-[11px] text-emerald-300 font-semibold">Tanaman Bio-Drilling / Bio-Tillage</div>
+                    <div id="recPlant" class="text-sm font-bold mt-0.5">Crotalaria juncea (Orok-orok) + Kacang Tunggak</div>
+                  </div>
+                  <div class="p-3 rounded-xl bg-white/10 border border-white/10">
+                    <div class="text-[11px] text-emerald-300 font-semibold">Dosis Biochar &amp; Kompos Jerami</div>
+                    <div id="recBiochar" class="text-sm font-bold mt-0.5">2,5 ton/Ha Biochar Sekam + 4 ton/Ha Kompos</div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 rounded-xl bg-white/10 border border-white/10">
+                      <div class="text-[11px] text-emerald-300 font-semibold">Reduksi BBM &amp; Emisi</div>
+                      <div id="recEmission" class="text-sm font-bold mt-0.5">-22% Solar / Ha</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white/10 border border-white/10">
+                      <div class="text-[11px] text-emerald-300 font-semibold">Jadwal Olah Aman</div>
+                      <div id="recSchedule" class="text-sm font-bold mt-0.5">Sen, 23 Nov (Air &lt;28%)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button id="btnExportRecipe" class="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-forest-900 font-display font-bold text-xs shadow transition">
+                <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                <span>Terapkan Resep ke Jadwal Gapoktan</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification Container (No alert()) -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT LOGIC                                          -->
+  <!-- ========================================================= -->
+  <script>
+    // ---------------------------------------------------------
+    // 1. DATA MODEL: 6 BLOK SAWAH (TAB 1)
+    // ---------------------------------------------------------
+    const plotsData = {
+      A1: {
+        name: 'Blok A1',
+        area: '2,1 Ha',
+        vess: 'Sq2 • Gembur',
+        badgeClass: 'bg-emerald-100 text-emerald-700',
+        bd: '1,34 g/cm³',
+        moisture: '27% (Aman)',
+        moistureClass: 'text-emerald-600',
+        tractor: 'Traktor R2 (1x)',
+        action: 'Pertahankan CTF',
+        note: 'Struktur agregat remah dengan makropori baik; penetrasi akar optimal hingga >30 cm.'
+      },
+      A2: {
+        name: 'Blok A2',
+        area: '2,4 Ha',
+        vess: 'Sq4 • Padat',
+        badgeClass: 'bg-red-100 text-red-700',
+        bd: '1,66 g/cm³',
+        moisture: '35% (Basah)',
+        moistureClass: 'text-red-600',
+        tractor: 'Traktor R4 (4x)',
+        action: 'Bio-Tillage',
+        note: 'Terdeteksi lapisan tapak bajak (hardpan) pada kedalaman 18–26 cm akibat olah basah.'
+      },
+      A3: {
+        name: 'Blok A3',
+        area: '1,9 Ha',
+        vess: 'Sq3 • Sedang',
+        badgeClass: 'bg-amber-100 text-amber-700',
+        bd: '1,51 g/cm³',
+        moisture: '31% (Waspada)',
+        moistureClass: 'text-amber-600',
+        tractor: 'Traktor R2 (3x)',
+        action: 'Kompos + Tunda',
+        note: 'Pemadatan mulai muncul di zona belokan traktor; dianjurkan penambahan kompos jerami.'
+      },
+      B1: {
+        name: 'Blok B1',
+        area: '2,0 Ha',
+        vess: 'Sq3 • Sedang',
+        badgeClass: 'bg-amber-100 text-amber-700',
+        bd: '1,53 g/cm³',
+        moisture: '32% (Ambang PL)',
+        moistureClass: 'text-amber-600',
+        tractor: 'Traktor R4 (2x)',
+        action: 'Jalur Tramline',
+        note: 'Kadar air tepat di ambang Plastic Limit; tunda alat berat minimal 48 jam.'
+      },
+      B2: {
+        name: 'Blok B2',
+        area: '2,2 Ha',
+        vess: 'Sq5 • Sangat Padat',
+        badgeClass: 'bg-red-100 text-red-800',
+        bd: '1,74 g/cm³',
+        moisture: '36% (Jenuh)',
+        moistureClass: 'text-red-700',
+        tractor: 'Harvester (3x)',
+        action: 'Bio-Drilling 6 Bln',
+        note: 'Pemadatan berat hingga subsoil (28 cm); risiko genangan permukaan dan hipoksia akar.'
+      },
+      B3: {
+        name: 'Blok B3',
+        area: '1,8 Ha',
+        vess: 'Sq1 • Sangat Gembur',
+        badgeClass: 'bg-emerald-100 text-emerald-700',
+        bd: '1,26 g/cm³',
+        moisture: '25% (Optimal)',
+        moistureClass: 'text-emerald-600',
+        tractor: 'Manual / Tanpa Mesin',
+        action: 'Zona Referensi',
+        note: 'Kondisi tanah paling sehat dengan aktivitas cacing tanah dan infiltrasi air sangat cepat.'
+      }
+    };
+
+    // ---------------------------------------------------------
+    // 2. DATA MODEL: 3 PRESET SAMPEL VESS (TAB 2)
+    // ---------------------------------------------------------
+    const vessPresets = {
+      padat: {
+        subtitle: 'Sampel Blok A2 • Titik GPS -3.2241, 104.6512',
+        conf: 'Conf. 94,2%',
+        scoreNum: '4',
+        scoreText: 'Sq4 — Padat',
+        bannerClass: 'bg-red-50 border-red-200',
+        labelClass: 'text-red-700',
+        titleClass: 'text-red-900',
+        iconClass: 'bg-red-600',
+        bd: '1,66 g/cm³',
+        pr: '2.480 kPa',
+        hardpan: '18–26 cm',
+        hardpanClass: 'text-red-600',
+        pore: '7,4% (Minim)',
+        finding: 'Dominasi gumpalan agregat sub-angular keras bertepi tajam (>10 cm), akar padi membelok horizontal (J-rooting) pada kedalaman 18 cm.',
+        soilSvg: `
+          <!-- Bongkahan besar padat dan kaku -->
+          <polygon points="150,70 490,72 505,275 135,278" fill="url(#soilBaseGrad)" stroke="#3D220B" stroke-width="3" />
+          <polygon points="150,155 496,158 505,275 135,278" fill="#3B1F0B" opacity="0.85" />
+          <!-- Retakan minim & tepi tajam -->
+          <path d="M260,72 L272,155 L255,210" stroke="#1E0E06" stroke-width="2" fill="none" />
+          <path d="M395,72 L382,162" stroke="#1E0E06" stroke-width="2" fill="none" />
+          <!-- Akar J-Rooting membelok tajam -->
+          <path d="M320,62 C320,115 318,148 318,162 C318,172 360,174 425,172" stroke="#FDE68A" stroke-width="3.5" fill="none" stroke-linecap="round" />
+          <path d="M318,162 C318,170 280,175 235,173" stroke="#FDE68A" stroke-width="2.5" fill="none" stroke-linecap="round" />
+        `,
+        overlaySvg: `
+          <!-- Box 1: Agregat Keras -->
+          <rect x="155" y="160" width="165" height="96" rx="4" fill="rgba(239,68,68,0.18)" stroke="#EF4444" stroke-width="2.5" />
+          <rect x="155" y="138" width="196" height="22" rx="4" fill="#EF4444" />
+          <text x="162" y="153" font-size="10.5" font-weight="700" fill="#FFFFFF">Agregat Keras Bertepi Tajam (94%)</text>
+
+          <!-- Box 2: J-Rooting -->
+          <rect x="296" y="112" width="152" height="74" rx="4" fill="rgba(245,158,11,0.18)" stroke="#F59E0B" stroke-width="2.5" />
+          <rect x="296" y="90" width="158" height="22" rx="4" fill="#F59E0B" />
+          <text x="303" y="105" font-size="10.5" font-weight="700" fill="#0F172A">Anomali Akar: J-Rooting</text>
+
+          <!-- Box 3: Makropori Minim -->
+          <rect x="358" y="198" width="132" height="62" rx="4" fill="rgba(239,68,68,0.18)" stroke="#F87171" stroke-width="2" stroke-dasharray="5 3" />
+          <rect x="358" y="260" width="138" height="20" rx="4" fill="#991B1B" />
+          <text x="365" y="274" font-size="10" font-weight="700" fill="#FFFFFF">Makropori Minim (&lt;8%)</text>
+        `
+      },
+      sedang: {
+        subtitle: 'Sampel Blok B1 • Titik GPS -3.2254, 104.6498',
+        conf: 'Conf. 91,8%',
+        scoreNum: '3',
+        scoreText: 'Sq3 — Padat Sedang',
+        bannerClass: 'bg-amber-50 border-amber-200',
+        labelClass: 'text-amber-700',
+        titleClass: 'text-amber-900',
+        iconClass: 'bg-amber-500',
+        bd: '1,53 g/cm³',
+        pr: '1.720 kPa',
+        hardpan: '20–24 cm (Tipis)',
+        hardpanClass: 'text-amber-600',
+        pore: '13,2% (Sedang)',
+        finding: 'Campuran agregat remah di lapisan atas (0–12 cm) dan gumpalan agak padat di lapisan tengah. Sebagian akar masih mampu menembus celah.',
+        soilSvg: `
+          <polygon points="155,74 485,76 495,272 145,274" fill="url(#soilBaseGrad)" stroke="#4A2511" stroke-width="2.5" />
+          <!-- Retakan sedang -->
+          <path d="M225,75 L240,145 L215,230" stroke="#1E0E06" stroke-width="3" fill="none" />
+          <path d="M350,76 L342,165 L368,255" stroke="#1E0E06" stroke-width="3" fill="none" />
+          <path d="M420,120 L380,195" stroke="#1E0E06" stroke-width="2.5" fill="none" />
+          <!-- Pori sedang -->
+          <circle cx="205" cy="115" r="4" fill="#1C1917" />
+          <circle cx="285" cy="130" r="5" fill="#1C1917" />
+          <circle cx="435" cy="145" r="4" fill="#1C1917" />
+          <!-- Akar menembus sebagian -->
+          <path d="M320,62 C322,120 330,175 342,215 C348,232 370,238 395,240" stroke="#FDE68A" stroke-width="3" fill="none" stroke-linecap="round" />
+          <path d="M320,115 C300,145 280,180 272,225" stroke="#FDE68A" stroke-width="2" fill="none" />
+        `,
+        overlaySvg: `
+          <rect x="170" y="88" width="150" height="72" rx="4" fill="rgba(16,185,129,0.16)" stroke="#10B981" stroke-width="2" />
+          <rect x="170" y="68" width="155" height="20" rx="4" fill="#059669" />
+          <text x="176" y="81" font-size="10" font-weight="700" fill="#FFFFFF">Agregat Remah Atas (89%)</text>
+
+          <rect x="295" y="175" width="165" height="78" rx="4" fill="rgba(245,158,11,0.2)" stroke="#F59E0B" stroke-width="2.5" />
+          <rect x="295" y="153" width="175" height="22" rx="4" fill="#F59E0B" />
+          <text x="302" y="168" font-size="10.5" font-weight="700" fill="#0F172A">Zona Transisi Semi-Padat (91%)</text>
+        `
+      },
+      gembur: {
+        subtitle: 'Sampel Blok A1 • Titik GPS -3.2236, 104.6501',
+        conf: 'Conf. 96,1%',
+        scoreNum: '2',
+        scoreText: 'Sq2 — Gembur',
+        bannerClass: 'bg-emerald-50 border-emerald-200',
+        labelClass: 'text-emerald-700',
+        titleClass: 'text-emerald-900',
+        iconClass: 'bg-emerald-600',
+        bd: '1,34 g/cm³',
+        pr: '940 kPa',
+        hardpan: 'Tidak Terdeteksi',
+        hardpanClass: 'text-emerald-600',
+        pore: '22,6% (Optimal)',
+        finding: 'Struktur agregat granular dan remah sangat baik, jaringan makropori merata, perakaran serabut menembus vertikal bebas hingga >25 cm.',
+        soilSvg: `
+          <!-- Bongkahan remah & banyak pori -->
+          <polygon points="160,78 480,76 488,268 152,270" fill="#7F4F24" stroke="#582F0E" stroke-width="2" />
+          <path d="M210,78 L220,160 L198,265" stroke="#1E0E06" stroke-width="3.5" fill="none" />
+          <path d="M295,78 L310,175 L288,268" stroke="#1E0E06" stroke-width="3.5" fill="none" />
+          <path d="M390,78 L375,180 L402,268" stroke="#1E0E06" stroke-width="3.5" fill="none" />
+          <!-- Banyak makropori -->
+          <circle cx="195" cy="115" r="5" fill="#1C1917" />
+          <circle cx="255" cy="145" r="6" fill="#1C1917" />
+          <circle cx="345" cy="125" r="5" fill="#1C1917" />
+          <circle cx="430" cy="155" r="6" fill="#1C1917" />
+          <circle cx="245" cy="220" r="5" fill="#1C1917" />
+          <circle cx="355" cy="225" r="6" fill="#1C1917" />
+          <circle cx="440" cy="230" r="5" fill="#1C1917" />
+          <!-- Akar sehat lurus ke bawah -->
+          <path d="M320,62 C320,130 322,200 320,262" stroke="#FDE68A" stroke-width="3.5" fill="none" stroke-linecap="round" />
+          <path d="M320,110 C295,145 275,190 262,255" stroke="#FDE68A" stroke-width="2.5" fill="none" />
+          <path d="M320,120 C350,155 375,200 388,258" stroke="#FDE68A" stroke-width="2.5" fill="none" />
+        `,
+        overlaySvg: `
+          <rect x="242" y="102" width="165" height="162" rx="4" fill="rgba(16,185,129,0.16)" stroke="#10B981" stroke-width="2.5" />
+          <rect x="242" y="80" width="182" height="22" rx="4" fill="#10B981" />
+          <text x="249" y="95" font-size="10.5" font-weight="700" fill="#FFFFFF">Penetrasi Akar Optimal (96%)</text>
+
+          <rect x="175" y="185" width="110" height="65" rx="4" fill="rgba(52,211,153,0.18)" stroke="#34D399" stroke-width="2" />
+          <rect x="175" y="250" width="128" height="20" rx="4" fill="#047857" />
+          <text x="182" y="264" font-size="10" font-weight="700" fill="#FFFFFF">Makropori Tinggi (22%)</text>
+        `
+      }
+    };
+
+    // ---------------------------------------------------------
+    // 3. NAVIGASI TAB & SIDEBAR MOBILE
+    // ---------------------------------------------------------
+    const tabTitles = {
+      'tab-overview': 'Peta Risiko Pemadatan & Status Lahan',
+      'tab-vess': 'Input & Analisis Sampel VESS (Kalibrasi AI)',
+      'tab-simulator': 'Simulator Digital Soil Twin & Remediasi Ekologis'
+    };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== tabId);
+      });
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const active = btn.dataset.tab === tabId;
+        if (active) {
+          btn.classList.add('bg-white', 'text-forest-900', 'font-semibold', 'shadow-sm');
+          btn.classList.remove('text-emerald-100', 'hover:bg-white/10', 'font-medium');
+        } else {
+          btn.classList.remove('bg-white', 'text-forest-900', 'font-semibold', 'shadow-sm');
+          btn.classList.add('text-emerald-100', 'hover:bg-white/10', 'font-medium');
+        }
+      });
+
+      document.getElementById('pageTitle').textContent = tabTitles[tabId] || 'TERRA-TWIN';
+
+      // Tutup sidebar di mobile setelah memilih tab
+      closeMobileSidebar();
+
+      // Pastikan Chart.js ter-render rapi saat membuka tab simulator
+      if (tabId === 'tab-simulator') {
+        updateSimulator();
+      }
+    }
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+    function openMobileSidebar() {
+      sidebar.classList.remove('-translate-x-full');
+      backdrop.classList.remove('hidden');
+    }
+    function closeMobileSidebar() {
+      sidebar.classList.add('-translate-x-full');
+      backdrop.classList.add('hidden');
+    }
+
+    mobileMenuBtn.addEventListener('click', openMobileSidebar);
+    backdrop.addEventListener('click', closeMobileSidebar);
+
+    // ---------------------------------------------------------
+    // 4. INTERAKSI PETA SPASIAL (TAB 1)
+    // ---------------------------------------------------------
+    function selectPlot(plotId) {
+      const data = plotsData[plotId];
+      if (!data) return;
+
+      document.querySelectorAll('.plot-polygon').forEach(p => p.classList.remove('plot-selected'));
+      const activePoly = document.getElementById('poly-' + plotId);
+      if (activePoly) activePoly.classList.add('plot-selected');
+
+      const badge = document.getElementById('inspBadge');
+      badge.textContent = data.vess;
+      badge.className = `px-2.5 py-1 rounded-lg text-xs font-bold ${data.badgeClass}`;
+
+      document.getElementById('inspTitle').textContent = `Inspeksi Detail: ${data.name} (${data.area})`;
+      document.getElementById('inspNote').textContent = data.note;
+      document.getElementById('inspBD').textContent = data.bd;
+
+      const moistEl = document.getElementById('inspMoisture');
+      moistEl.textContent = data.moisture;
+      moistEl.className = `font-display font-bold text-sm mt-0.5 ${data.moistureClass}`;
+
+      document.getElementById('inspTractor').textContent = data.tractor;
+      document.getElementById('inspAction').textContent = data.action;
+    }
+
+    document.querySelectorAll('.plot-group').forEach(group => {
+      group.addEventListener('click', () => selectPlot(group.dataset.plot));
+    });
+
+    // ---------------------------------------------------------
+    // 5. INTERAKSI INPUT & AI VESS SCANNER (TAB 2)
+    // ---------------------------------------------------------
+    let currentVessKey = 'padat';
+
+    function renderVessPreset(key) {
+      currentVessKey = key;
+      const d = vessPresets[key];
+
+      // Reset tampilan foto custom ke ilustrasi SVG
+      document.getElementById('customPhotoPreview').classList.add('hidden');
+      document.getElementById('vessSoilSvg').classList.remove('hidden');
+
+      // Update gaya tombol preset
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const isSelected = btn.dataset.preset === key;
+        btn.className = isSelected
+          ? 'preset-btn px-3 py-2.5 rounded-xl border-2 border-forest-700 bg-emerald-50/70 text-left transition shadow-sm'
+          : 'preset-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition';
+      });
+
+      // Render SVG tanah & overlay AI
+      document.getElementById('soilBlockVisual').innerHTML = d.soilSvg;
+      document.getElementById('aiOverlayGroup').innerHTML = d.overlaySvg;
+      updateOverlayVisibility();
+
+      // Update metrik kanan
+      document.getElementById('vessBlockSubtitle').textContent = d.subtitle;
+      document.getElementById('vessConfBadge').textContent = d.conf;
+      document.getElementById('vessScoreText').textContent = d.scoreText;
+      document.getElementById('vessScoreText').className = `font-display font-extrabold text-2xl mt-0.5 ${d.titleClass}`;
+
+      const banner = document.getElementById('vessScoreBanner');
+      banner.className = `mt-4 p-4 rounded-xl border flex items-center justify-between ${d.bannerClass}`;
+      banner.querySelector('div > div:first-child').className = `text-[11px] font-semibold uppercase tracking-wider ${d.labelClass}`;
+
+      const iconBox = document.getElementById('vessScoreIcon');
+      iconBox.textContent = d.scoreNum;
+      iconBox.className = `w-11 h-11 rounded-xl text-white flex items-center justify-center font-display font-extrabold text-lg ${d.iconClass}`;
+
+      document.getElementById('vessBD').textContent = d.bd;
+      document.getElementById('vessPR').textContent = d.pr;
+      const hpEl = document.getElementById('vessHardpan');
+      hpEl.textContent = d.hardpan;
+      hpEl.className = `font-display font-bold text-base mt-0.5 ${d.hardpanClass}`;
+      document.getElementById('vessPore').textContent = d.pore;
+      document.getElementById('vessFinding').textContent = d.finding;
+    }
+
+    function updateOverlayVisibility() {
+      const show = document.getElementById('toggleAiOverlay').checked;
+      document.getElementById('aiOverlayGroup').style.display = show ? 'block' : 'none';
+    }
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => renderVessPreset(btn.dataset.preset));
+    });
+    document.getElementById('toggleAiOverlay').addEventListener('change', updateOverlayVisibility);
+
+    // Handle unggah foto lokal
+    document.getElementById('soilFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('uploadFileName').textContent = `Berkas dipilih: ${file.name} (dianalisis AI)`;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.getElementById('customPhotoPreview');
+        img.src = ev.target.result;
+        img.classList.remove('hidden');
+        document.getElementById('vessSoilSvg').classList.add('hidden');
+        showToast('Foto sampel tanah berhasil dimuat dan dikalibrasi oleh model VESS-AI.', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Tombol sinkronisasi ke Digital Soil Twin
+    document.getElementById('btnSyncTwin').addEventListener('click', () => {
+      showToast('Kalibrasi VESS & riwayat alsintan berhasil disinkronkan ke Digital Soil Twin!', 'success');
+    });
+
+    // ---------------------------------------------------------
+    // 6. SIMULATOR DIGITAL TWIN & CHART.JS (TAB 3)
+    // ---------------------------------------------------------
+    const machineNames = [
+      'Tanpa Mesin (Manual)',
+      'Traktor Roda 2',
+      'Traktor Roda 4',
+      'Combine Harvester Berat'
+    ];
+
+    let recoveryChart = null;
+
+    function initOrUpdateChart(prSeries, yieldSeries) {
+      const ctx = document.getElementById('recoveryChart').getContext('2d');
+      const labels = ['Bln 0', 'Bln 1', 'Bln 2', 'Bln 3', 'Bln 4', 'Bln 5', 'Bln 6'];
+
+      if (recoveryChart) {
+        recoveryChart.data.datasets[0].data = prSeries;
+        recoveryChart.data.datasets[1].data = yieldSeries;
+        recoveryChart.update();
+        return;
+      }
+
+      recoveryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Penetration Resistance (kPa)',
+              data: prSeries,
+              borderColor: '#7F4F24',
+              backgroundColor: 'rgba(127, 79, 36, 0.12)',
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Indeks Potensi Panen (%)',
+              data: yieldSeries,
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              borderWidth: 2.5,
+              borderDash: [5, 4],
+              tension: 0.35,
+              fill: false,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { usePointStyle: true, font: { family: 'Inter', size: 11, weight: '600' } }
+            }
+          },
+          scales: {
+            y: {
+              type: 'linear',
+              position: 'left',
+              min: 600,
+              max: 3000,
+              title: { display: true, text: 'Kepadatan (kPa)', font: { size: 11, weight: '600' } },
+              grid: { color: '#F1F5F9' }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              min: 60,
+              max: 115,
+              title: { display: true, text: 'Potensi Panen (%)', font: { size: 11, weight: '600' } },
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    function updateSimulator() {
+      const machineLevel = parseInt(document.getElementById('simMachine').value, 10);
+      const moisture = parseInt(document.getElementById('simMoisture').value, 10);
+      const remediation = document.querySelector('input[name="remediation"]:checked').value;
+
+      // Update label kontrol
+      document.getElementById('simMachineLabel').textContent = machineNames[machineLevel];
+      const moistLabel = document.getElementById('simMoistureLabel');
+      if (moisture > 32) {
+        moistLabel.textContent = `${moisture}% (Di atas PL)`;
+        moistLabel.className = 'px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold';
+      } else if (moisture >= 29) {
+        moistLabel.textContent = `${moisture}% (Mendekati PL)`;
+        moistLabel.className = 'px-2 py-0.5 rounded bg-amber-100 text-amber-700 font-bold';
+      } else {
+        moistLabel.textContent = `${moisture}% (Aman)`;
+        moistLabel.className = 'px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold';
+      }
+
+      // Perhitungan model ilmiah sederhana yang realistis
+      const wetPenalty = moisture > 32 ? (moisture - 32) * 0.015 * (machineLevel + 0.5) : 0;
+      const machineImpact = machineLevel * 0.065;
+      const remBonus = remediation === 'full' ? 0.28 : remediation === 'biotillage' ? 0.16 : 0;
+
+      let bd = 1.44 + machineImpact + wetPenalty - remBonus;
+      bd = Math.max(1.22, Math.min(1.82, bd));
+
+      // Daya tembus akar (%)
+      let rootPen = Math.round(100 - ((bd - 1.22) / (1.82 - 1.22)) * 72);
+      rootPen = Math.max(22, Math.min(98, rootPen));
+
+      // Estimasi dampak hasil panen (%)
+      const yieldDelta = ((rootPen - 75) * 0.52).toFixed(1);
+      const isSevere = bd >= 1.60;
+      const isModerate = bd >= 1.46 && bd < 1.60;
+
+      // Update 3 Metrik Utama
+      const bdEl = document.getElementById('metricBD');
+      const rootEl = document.getElementById('metricRoot');
+      const yieldEl = document.getElementById('metricYield');
+      const statusPill = document.getElementById('simStatusPill');
+
+      bdEl.textContent = bd.toFixed(2).replace('.', ',') + ' g/cm³';
+      rootEl.textContent = rootPen + '%';
+      yieldEl.textContent = (yieldDelta > 0 ? '+' : '') + yieldDelta.replace('.', ',') + '%';
+
+      const colorClass = isSevere ? 'text-red-600' : isModerate ? 'text-amber-600' : 'text-emerald-600';
+      bdEl.className = `font-display font-extrabold text-xl mt-0.5 ${colorClass}`;
+      rootEl.className = `font-display font-extrabold text-xl mt-0.5 ${colorClass}`;
+      yieldEl.className = `font-display font-extrabold text-xl mt-0.5 ${colorClass}`;
+
+      if (isSevere) {
+        statusPill.textContent = 'Risiko J-Rooting Tinggi';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+        document.getElementById('metricBDSub').textContent = 'Melebihi ambang kritis (>1,60)';
+        document.getElementById('metricRootSub').textContent = 'Akar membelok di hardpan';
+        document.getElementById('metricYieldSub').textContent = 'Penurunan panen signifikan';
+      } else if (isModerate) {
+        statusPill.textContent = 'Pemadatan Moderat';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700';
+        document.getElementById('metricBDSub').textContent = 'Mendekati ambang batas';
+        document.getElementById('metricRootSub').textContent = 'Penetrasi akar parsial';
+        document.getElementById('metricYieldSub').textContent = 'Perlu jadwal olah aman';
+      } else {
+        statusPill.textContent = 'Struktur Tanah Pulih & Optimal';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+        document.getElementById('metricBDSub').textContent = 'Ideal untuk perakaran padi';
+        document.getElementById('metricRootSub').textContent = 'Akar menembus hingga subsoil';
+        document.getElementById('metricYieldSub').textContent = 'Potensi kenaikan produktivitas';
+      }
+
+      // Update Visual Penampang 2D Soil Profile
+      const hardpanRect = document.getElementById('layerHardpan');
+      const hardpanPattern = document.getElementById('hardpanPattern');
+      const hardpanTagBg = document.getElementById('hardpanTagBg');
+      const hardpanTagText = document.getElementById('hardpanTagText');
+
+      if (isSevere) {
+        hardpanRect.setAttribute('fill', '#3B1A08');
+        hardpanPattern.setAttribute('opacity', '0.85');
+        hardpanTagBg.setAttribute('fill', 'rgba(185,28,28,0.9)');
+        hardpanTagText.textContent = 'Hardpan / Plow Pan (Sangat Padat)';
+      } else if (isModerate) {
+        hardpanRect.setAttribute('fill', '#5E3417');
+        hardpanPattern.setAttribute('opacity', '0.45');
+        hardpanTagBg.setAttribute('fill', 'rgba(180,83,9,0.88)');
+        hardpanTagText.textContent = 'Plow Pan Mulai Melunak';
+      } else {
+        hardpanRect.setAttribute('fill', '#7F522D');
+        hardpanPattern.setAttribute('opacity', '0.12');
+        hardpanTagBg.setAttribute('fill', 'rgba(5,150,105,0.88)');
+        hardpanTagText.textContent = 'Zona Perakaran Gembur (Pulih)';
+      }
+
+      // Render Pori-Pori Makro
+      const poreCount = isSevere ? 4 : isModerate ? 12 : 24;
+      let poresHtml = '';
+      for (let i = 0; i < poreCount; i++) {
+        const px = 95 + ((i * 53) % 390);
+        const py = 92 + ((i * 37) % 205);
+        const r = isSevere ? 2.2 : isModerate ? 3.2 : 4;
+        poresHtml += `<circle cx="${px}" cy="${py}" r="${r}" fill="#1E293B" opacity="0.55" />`;
+      }
+      document.getElementById('soilPoresGroup').innerHTML = poresHtml;
+
+      // Render Akar (J-Rooting vs Lurus Dalam)
+      const rootsGroup = document.getElementById('plantRootsGroup');
+      if (isSevere) {
+        // Akar menabrak lapisan 15 cm (y=158) lalu berbelok tajam menyamping
+        rootsGroup.innerHTML = `
+          <path d="M355,72 C355,115 352,146 352,158 C352,166 410,166 472,163" stroke="#FEF08A" stroke-width="4" fill="none" stroke-linecap="round" />
+          <path d="M352,158 C352,165 295,168 238,164" stroke="#FEF08A" stroke-width="3.2" fill="none" stroke-linecap="round" />
+          <path d="M355,118 C325,135 305,152 275,155" stroke="#FDE047" stroke-width="2" fill="none" />
+          <path d="M355,122 C382,138 405,152 435,154" stroke="#FDE047" stroke-width="2" fill="none" />
+          <rect x="242" y="132" width="102" height="20" rx="5" fill="#DC2626" />
+          <text x="293" y="146" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">Efek J-Rooting!</text>
+        `;
+      } else if (isModerate) {
+        // Akar menembus sebagian ke kedalaman ~25 cm
+        rootsGroup.innerHTML = `
+          <path d="M355,72 C355,130 350,185 362,225 C368,238 395,240 422,238" stroke="#FEF08A" stroke-width="3.5" fill="none" stroke-linecap="round" />
+          <path d="M355,115 C330,155 312,195 305,228" stroke="#FDE047" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <path d="M355,120 C385,155 405,185 415,215" stroke="#FDE047" stroke-width="2.2" fill="none" stroke-linecap="round" />
+        `;
+      } else {
+        // Akar menembus lurus dan dalam hingga Subsoil (35-38 cm)
+        rootsGroup.innerHTML = `
+          <path d="M355,72 C355,150 356,230 354,306" stroke="#FEF08A" stroke-width="4" fill="none" stroke-linecap="round" />
+          <path d="M355,110 C325,165 298,230 285,296" stroke="#FDE047" stroke-width="2.8" fill="none" stroke-linecap="round" />
+          <path d="M355,115 C385,170 412,235 426,298" stroke="#FDE047" stroke-width="2.8" fill="none" stroke-linecap="round" />
+          <path d="M355,165 C335,215 322,260 318,302" stroke="#FDE047" stroke-width="2" fill="none" />
+          <path d="M355,170 C375,220 388,262 392,302" stroke="#FDE047" stroke-width="2" fill="none" />
+          <rect x="200" y="258" width="128" height="22" rx="5" fill="#059669" />
+          <text x="264" y="273" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">Akar Tembus 38 cm ✓</text>
+        `;
+      }
+
+      // Update Chart.js Series (Bulan 0 - 6)
+      const startPR = Math.round(1150 + (bd - 1.22) * 2600);
+      let prSeries, yieldSeries;
+
+      if (remediation === 'full') {
+        prSeries = [startPR, startPR - 180, startPR - 370, startPR - 580, startPR - 790, startPR - 960, Math.max(920, startPR - 1120)];
+        yieldSeries = [82, 85, 89, 94, 99, 105, 110];
+      } else if (remediation === 'biotillage') {
+        prSeries = [startPR, startPR - 120, startPR - 250, startPR - 410, startPR - 520, startPR - 610, Math.max(1150, startPR - 680)];
+        yieldSeries = [82, 84, 87, 92, 95, 98, 101];
+      } else {
+        const drift = moisture > 32 && machineLevel > 0 ? 55 : 15;
+        prSeries = [startPR, startPR + drift, startPR + drift * 2, startPR + drift * 2.5, startPR + drift * 3, startPR + drift * 3.5, Math.min(2950, startPR + drift * 4)];
+        yieldSeries = [82, 81, 80, 78, 77, 75, 74];
+      }
+      initOrUpdateChart(prSeries, yieldSeries);
+
+      // Update Resep Remediasi Ekologis Dinamis
+      if (remediation === 'full') {
+        document.getElementById('recPlant').textContent = 'Crotalaria juncea + Lobak Tillage (Bio-Drilling Dalam)';
+        document.getElementById('recBiochar').textContent = '3,0 ton/Ha Biochar Sekam + 5 ton/Ha Kompos Jerami';
+        document.getElementById('recEmission').textContent = '-28% BBM & +1,4 t CO₂e';
+      } else if (remediation === 'biotillage') {
+        document.getElementById('recPlant').textContent = 'Kacang Tunggak (Vigna unguiculata) & Crotalaria';
+        document.getElementById('recBiochar').textContent = '2,0 ton/Ha Kompos Jerami Terdekomposisi';
+        document.getElementById('recEmission').textContent = '-19% Solar Traktor/Ha';
+      } else {
+        document.getElementById('recPlant').textContent = 'Disarankan Aktifkan Bio-Tillage Pascapanen';
+        document.getElementById('recBiochar').textContent = 'Minimal 2,5 ton/Ha Biochar untuk Mencegah Hardpan';
+        document.getElementById('recEmission').textContent = '0% (Risiko Bajak Ulang)';
+      }
+
+      document.getElementById('recSchedule').textContent = moisture > 32
+        ? 'Tunda ≥48 Jam (Tunggu <30%)'
+        : 'Aman Masuk Jalur Tramline';
+    }
+
+    document.getElementById('simMachine').addEventListener('input', updateSimulator);
+    document.getElementById('simMoisture').addEventListener('input', updateSimulator);
+    document.querySelectorAll('input[name="remediation"]').forEach(r => {
+      r.addEventListener('change', updateSimulator);
+    });
+
+    // ---------------------------------------------------------
+    // 7. TOAST HELPER & TOMBOL GLOBAL
+    // ---------------------------------------------------------
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-forest-900 border-emerald-400/40' : 'bg-slate-900 border-slate-700';
+
+      toast.className = `toast-animate pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl text-white text-xs font-semibold border shadow-lg max-w-sm ${bg}`;
+      toast.innerHTML = `
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    document.getElementById('btnSyncGlobal').addEventListener('click', () => {
+      showToast('Data citra Sentinel-1 SAR & Sentinel-2 berhasil disinkronkan (06:15 WIB).');
+    });
+    document.getElementById('btnExportRecipe').addEventListener('click', () => {
+      showToast('Resep remediasi ekologis telah dijadwalkan untuk Gapoktan Tani Makmur.');
+    });
+
+    // ---------------------------------------------------------
+    // 8. INISIALISASI AWAL
+    // ---------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      selectPlot('A2');
+      renderVessPreset('padat');
+      updateSimulator();
+    });
+  </script>
+</body>
+</html>
